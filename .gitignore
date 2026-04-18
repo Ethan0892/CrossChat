@@ -1,0 +1,21 @@
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+*.class
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Legacy prototype files in repo root (superseded by src/ structure)
+/Config.java
+/VelocityGlobalChat.java
+/xml.txt

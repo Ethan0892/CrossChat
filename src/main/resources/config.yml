@@ -1,0 +1,44 @@
+# ============================================================
+#  VelocityGlobalChat — config.yml
+#  This file is created automatically on first run.
+#  Modify and restart (or reload) the proxy to apply changes.
+# ============================================================
+
+# Set to false to disable global chat entirely without removing the plugin.
+enabled: true
+
+# ---------------------------------------------------------------
+# Chat format
+# ---------------------------------------------------------------
+# Placeholders:
+#   {server}  — name of the backend server the sender is currently on
+#   {player}  — sender's Minecraft username
+#   {prefix}  — prefix from LuckPerms (empty string if not installed)
+#   {message} — the chat message
+#               NOTE: message content is ALWAYS rendered as plain text,
+#               so players cannot inject colour codes or formatting.
+#
+# Format styles (pick ONE, do not mix in the same format string):
+#   Legacy &-codes  →  &c, &l, &r, &#ff0000  etc.
+#   MiniMessage     →  <red>, <bold>, <#ff0000>, <gradient:red:blue>  etc.
+#
+# Default (legacy &-codes):
+format: "&8[&b{server}&8] &7{prefix}{player}&f: {message}"
+
+# MiniMessage example — uncomment and remove the line above to use:
+# format: "<dark_gray>[<aqua>{server}</aqua>]</dark_gray> <gray>{prefix}{player}</gray><white>: {message}</white>"
+
+# ---------------------------------------------------------------
+# Server filter
+# ---------------------------------------------------------------
+# List the server names (from velocity.toml) that participate in
+# global chat.  Players on servers NOT listed here will neither
+# see nor send global messages.
+#
+# Leave the list completely empty to include ALL servers:
+#   servers:
+#
+servers:
+  - hub
+  - survival
+  - farming
