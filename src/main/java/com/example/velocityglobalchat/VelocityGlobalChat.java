@@ -18,7 +18,7 @@ import java.nio.file.Path;
         name = "VelocityGlobalChat",
         version = "1.1.0",
         description = "Global cross-server chat for Velocity",
-        authors = {"YourName"}
+        authors = {"Ethan0892"}
 )
 public class VelocityGlobalChat {
 
@@ -47,6 +47,11 @@ public class VelocityGlobalChat {
         }
 
         LuckPermsHook luckPermsHook = new LuckPermsHook(server, logger);
+
+        // Register the outgoing plugin-message channel used to signal backends
+        // to suppress the unsigned echo of the global chat message.
+        server.getChannelRegistrar().register(GlobalChatListener.SUPPRESS_CHANNEL);
+
         server.getEventManager().register(this, new GlobalChatListener(server, config, luckPermsHook));
 
         logger.info("VelocityGlobalChat enabled.");

@@ -1,0 +1,10 @@
+name: CrossChatBackend
+version: 1.2.0
+main: com.example.crosschatbackend.CrossChatBackend
+api-version: "1.19"
+description: >
+  Companion backend plugin for VelocityGlobalChat.
+  Suppresses the local-chat echo of messages already broadcast globally by
+  the proxy, and co-operates with the crosschat:suppress plugin channel.
+authors:
+  - Ethan0892

@@ -13,6 +13,26 @@ _Nothing yet._
 
 ---
 
+## [1.2.0] — 2026-04-18
+
+### Fixed
+- **Critical: players kicked with "A proxy plugin caused an illegal protocol state"** on Minecraft 1.19.1+
+  - Root cause: `ChatResult.denied()` cannot cancel a cryptographically-signed chat message at the proxy level (Velocity/Minecraft protocol restriction introduced in 1.19.1)
+  - Fix: replaced `ChatResult.denied()` with `ChatResult.message(text)` which strips the signature (making the message "unsigned") instead of attempting to cancel it — this prevents the disconnect entirely
+
+### Added
+- **`crosschat:suppress` plugin-message channel** — the proxy sends the sender's UUID to the backend over this channel immediately before forwarding the unsigned echo; the companion backend plugin uses this to silently cancel local display
+- **`CrossChatBackend` companion Paper plugin** (`backend/`) — drop into each Paper/Purpur backend's `plugins/` directory to suppress the local-chat echo of messages already broadcast globally:
+  - Listens on `crosschat:suppress`
+  - Cancels `AsyncChatEvent` for the flagged player via a one-shot `ConcurrentHashMap` set
+  - Compatible with Paper 1.19.1+, Java 17+
+  - If the backend plugin is absent, global broadcast still works but the message will also appear in local backend chat
+
+### Notes
+- In `config/paper-global.yml` on each backend, ensure `enforce-secure-profiles: false` so that the signature-stripped message forwarded by Velocity is accepted rather than rejected with a "Chat message delivery failed" system message
+
+---
+
 ## [1.1.0] — 2026-04-18
 
 ### Changed
@@ -41,6 +61,7 @@ _Nothing yet._
 - Maven build with Velocity annotation-processor-generated `velocity-plugin.json`
 - Compatible with Java 17+ and Velocity 3.x
 
-[Unreleased]: https://github.com/Ethan0892/CrossChat/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Ethan0892/CrossChat/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Ethan0892/CrossChat/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Ethan0892/CrossChat/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Ethan0892/CrossChat/releases/tag/v1.0.0

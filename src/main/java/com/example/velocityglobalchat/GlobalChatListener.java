@@ -1,13 +1,16 @@
 package com.example.velocityglobalchat;
 
+import com.google.common.io.ByteStreams;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.PlayerChatEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
+import com.google.common.io.ByteArrayDataOutput;
 import java.util.regex.Pattern;
 
 /**
@@ -16,6 +19,14 @@ import java.util.regex.Pattern;
  * the message isn't echoed locally by the backend server.
  */
 public class GlobalChatListener {
+
+    /**
+     * Plugin-messaging channel used to tell the companion backend plugin to
+     * suppress the unsigned echo of this player's message from local chat.
+     * Both proxy and backend must agree on this name.
+     */
+    static final MinecraftChannelIdentifier SUPPRESS_CHANNEL =
+            MinecraftChannelIdentifier.from("crosschat:suppress");
 
     /**
      * Detects common MiniMessage tag patterns such as {@code <red>}, {@code </bold>},
@@ -70,9 +81,33 @@ public class GlobalChatListener {
 
         broadcast(formatted);
 
-        // Deny the event so the message is NOT forwarded to the backend server,
-        // which prevents the player's own server from also displaying it.
-        event.setResult(PlayerChatEvent.ChatResult.denied());
+        // Signal the companion backend plugin to suppress local display of this message.
+        // The plugin message is sent over the same TCP connection as the chat packet,
+        // so it is guaranteed to arrive at the backend before the forwarded message.
+        sendSuppressSignal(player);
+
+        // IMPORTANT: ChatResult.denied() disconnects players in Minecraft 1.19.1+ because
+        // signed chat messages cannot be cancelled at the proxy level.
+        // ChatResult.message(text) strips the cryptographic signature, making the message
+        // "unsigned", which the backend can then receive (and our companion plugin cancels).
+        event.setResult(PlayerChatEvent.ChatResult.message(event.getMessage()));
+    }
+
+    /**
+     * Sends a plugin message to the player's current backend server instructing
+     * the CrossChatBackend companion plugin to suppress the next chat event from
+     * this player (which will be the unsigned echo of the message we just broadcast).
+     *
+     * <p>If the backend does not have CrossChatBackend installed the packet is
+     * silently ignored; the message will appear in local chat as a fallback.</p>
+     */
+    private void sendSuppressSignal(Player player) {
+        player.getCurrentServer().ifPresent(conn -> {
+            ByteArrayDataOutput out = ByteStreams.newDataOutput(16);
+            out.writeLong(player.getUniqueId().getMostSignificantBits());
+            out.writeLong(player.getUniqueId().getLeastSignificantBits());
+            conn.sendPluginMessage(SUPPRESS_CHANNEL, out.toByteArray());
+        });
     }
 
     // -------------------------------------------------------------------------
