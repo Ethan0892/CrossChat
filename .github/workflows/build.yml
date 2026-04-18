@@ -1,0 +1,122 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ============================================================
+  # Build the Velocity proxy plugin
+  # ============================================================
+  build-proxy:
+    name: Proxy plugin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build (proxy)
+        run: mvn -B clean package --no-transfer-progress
+
+      - name: Upload proxy jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: velocityglobalchat-proxy
+          path: target/velocityglobalchat-*.jar
+          if-no-files-found: error
+
+  # ============================================================
+  # Build the companion backend Paper plugin
+  # ============================================================
+  build-backend:
+    name: Backend companion plugin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build (backend)
+        working-directory: backend
+        run: mvn -B clean package --no-transfer-progress
+
+      - name: Upload backend jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: crosschatbackend-paper
+          path: backend/target/crosschatbackend-*.jar
+          if-no-files-found: error
+
+  # ============================================================
+  # Create a GitHub Release and attach both jars (tags only)
+  # ============================================================
+  release:
+    name: GitHub Release
+    needs: [build-proxy, build-backend]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout (for CHANGELOG)
+        uses: actions/checkout@v4
+
+      - name: Download proxy jar
+        uses: actions/download-artifact@v4
+        with:
+          name: velocityglobalchat-proxy
+          path: jars/
+
+      - name: Download backend jar
+        uses: actions/download-artifact@v4
+        with:
+          name: crosschatbackend-paper
+          path: jars/
+
+      # Extract the changelog section for this tag from CHANGELOG.md
+      - name: Extract release notes
+        id: notes
+        run: |
+          TAG="${GITHUB_REF_NAME}"          # e.g. v1.2.0
+          VERSION="${TAG#v}"                # strip leading v → 1.2.0
+
+          # Pull out everything between this version's ## heading and the next one
+          NOTES=$(awk "/^## \[${VERSION}\]/,/^## \[/" CHANGELOG.md \
+                  | head -n -1 \
+                  | tail -n +2)
+
+          # GitHub Actions multiline output
+          {
+            echo "body<<RELEASE_NOTES_EOF"
+            echo "$NOTES"
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "VelocityGlobalChat ${{ github.ref_name }}"
+          body: ${{ steps.notes.outputs.body }}
+          files: jars/*.jar
