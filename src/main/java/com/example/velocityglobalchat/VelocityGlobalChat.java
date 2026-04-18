@@ -16,7 +16,7 @@ import java.nio.file.Path;
 @Plugin(
         id = "velocityglobalchat",
         name = "VelocityGlobalChat",
-        version = "1.0.0",
+        version = "1.1.0",
         description = "Global cross-server chat for Velocity",
         authors = {"YourName"}
 )

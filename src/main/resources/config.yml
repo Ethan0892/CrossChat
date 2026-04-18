@@ -29,16 +29,28 @@ format: "&8[&b{server}&8] &7{prefix}{player}&f: {message}"
 # format: "<dark_gray>[<aqua>{server}</aqua>]</dark_gray> <gray>{prefix}{player}</gray><white>: {message}</white>"
 
 # ---------------------------------------------------------------
-# Server filter
+# Server display names & filter
 # ---------------------------------------------------------------
-# List the server names (from velocity.toml) that participate in
-# global chat.  Players on servers NOT listed here will neither
-# see nor send global messages.
+# Format:  servername: "Display Text"
+#   The key must match the server name in velocity.toml (case-insensitive).
+#   The value is substituted for {server} in the format string, so you
+#   can use colours and formatting here just like in the format above.
 #
-# Leave the list completely empty to include ALL servers:
-#   servers:
+# Players on servers NOT listed here neither see nor send global messages.
+# Leave the block with no entries to include ALL servers; {server} will
+# then show the raw velocity server name uppercased.
+#
+# & code examples:
+#   hub:      "&bHUB"
+#   survival: "&a&lSURVIVAL"
+#   farming:  "&eFARMING"
+#
+# MiniMessage examples (only if your format uses MiniMessage):
+#   hub:      "<aqua>HUB</aqua>"
+#   survival: "<green><bold>SURVIVAL</bold></green>"
+#   farming:  "<yellow>FARMING</yellow>"
 #
 servers:
-  - hub
-  - survival
-  - farming
+  hub: "&bHUB"
+  survival: "&aSURVIVAL"
+  farming: "&eFARMING"

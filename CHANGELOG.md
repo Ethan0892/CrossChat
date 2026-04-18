@@ -13,6 +13,17 @@ _Nothing yet._
 
 ---
 
+## [1.1.0] — 2026-04-18
+
+### Changed
+- `servers` config block now uses a **key-value format** (`servername: "Display Text"`) instead of a plain list
+  - The value is substituted for `{server}` in the format string, allowing per-server display names with colours/formatting (e.g. `hub: "&bHUB"`, `survival: "&a&lSURVIVAL"`)
+  - Backwards-compatible: the old `  - name` list form is still accepted and defaults the display name to the uppercased server name
+- `Config` internally changed from `Set<String>` to `Map<String, String>` for server entries; added `getDisplayName(String)` accessor
+- If a server is included via the empty-list (all-servers) mode, `{server}` falls back to the raw velocity server name uppercased
+
+---
+
 ## [1.0.0] — 2026-04-18
 
 ### Added
@@ -30,5 +41,6 @@ _Nothing yet._
 - Maven build with Velocity annotation-processor-generated `velocity-plugin.json`
 - Compatible with Java 17+ and Velocity 3.x
 
-[Unreleased]: https://github.com/Ethan0892/CrossChat/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Ethan0892/CrossChat/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Ethan0892/CrossChat/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Ethan0892/CrossChat/releases/tag/v1.0.0

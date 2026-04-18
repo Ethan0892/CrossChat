@@ -3,8 +3,9 @@ package com.example.velocityglobalchat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -12,8 +13,12 @@ import java.util.Set;
  *   format: <string>         — may optionally be wrapped in single or double quotes
  *   enabled: true|false
  *   servers:
- *     - <name>
- *     - <name>
+ *     servername: "Display Text"   — key = velocity server name (case-insensitive)
+ *                                    value = the text shown for {server} in the format
+ *
+ * Backwards-compatible list form is also accepted:
+ *   servers:
+ *     - servername              — display defaults to the name uppercased
  */
 public class Config {
 
@@ -22,7 +27,8 @@ public class Config {
 
     private String format  = DEFAULT_FORMAT;
     private boolean enabled = true;
-    private final Set<String> servers = new LinkedHashSet<>();
+    /** key = lowercase velocity server name, value = configured display string */
+    private final Map<String, String> serverDisplayNames = new LinkedHashMap<>();
 
     public Config(Path configPath) throws IOException {
         if (Files.exists(configPath)) {
@@ -44,27 +50,45 @@ public class Config {
             String line = raw;
             if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
 
+            // Top-level keys are not indented; reset context when we see one
+            boolean isIndented = !line.isEmpty()
+                    && (line.charAt(0) == ' ' || line.charAt(0) == '\t');
+            if (!isIndented) {
+                inServersList = false;
+            }
+
             if (line.startsWith("format:")) {
                 format = stripQuotes(line.substring("format:".length()).trim());
-                inServersList = false;
 
             } else if (line.startsWith("enabled:")) {
                 enabled = Boolean.parseBoolean(
                         stripQuotes(line.substring("enabled:".length()).trim()));
-                inServersList = false;
 
             } else if (line.startsWith("servers:")) {
                 inServersList = true;
 
-            } else if (inServersList && line.stripLeading().startsWith("- ")) {
-                // Handles "  - name" lines
-                String entry = stripQuotes(
-                        line.stripLeading().substring(2).trim());
-                if (!entry.isEmpty()) {
-                    servers.add(entry.toLowerCase());
+            } else if (inServersList && isIndented) {
+                String stripped = line.stripLeading();
+
+                if (stripped.startsWith("- ")) {
+                    // Legacy list format — display defaults to name uppercased
+                    String name = stripQuotes(stripped.substring(2).trim()).toLowerCase();
+                    if (!name.isEmpty()) {
+                        serverDisplayNames.put(name, name.toUpperCase());
+                    }
+                } else {
+                    // New key: value format — "hub: \"&bHUB\""
+                    int colonIdx = stripped.indexOf(':');
+                    if (colonIdx > 0) {
+                        String key = stripped.substring(0, colonIdx).trim().toLowerCase();
+                        String val = stripQuotes(stripped.substring(colonIdx + 1).trim());
+                        if (!key.isEmpty()) {
+                            // If value is blank, fall back to uppercased key
+                            serverDisplayNames.put(key,
+                                    val.isEmpty() ? key.toUpperCase() : val);
+                        }
+                    }
                 }
-            } else {
-                inServersList = false;
             }
         }
     }
@@ -103,12 +127,17 @@ public class Config {
                 "format: \"&8[&b{server}&8] &7{prefix}{player}&f: {message}\"\n" +
                 "\n" +
                 "# Servers that participate in global chat.\n" +
-                "# Players on servers NOT in this list will not see or send global messages.\n" +
-                "# Leave the list empty to include ALL servers.\n" +
+                "# Format: servername: \"Display Text\"\n" +
+                "#   The key must match the server name in velocity.toml (case-insensitive).\n" +
+                "#   The value is the text substituted for {server} in the format string.\n" +
+                "#   Use the same colour style (&-codes or MiniMessage) as your format.\n" +
+                "# Players on servers NOT listed here neither see nor send global messages.\n" +
+                "# Leave the block empty (no entries) to include ALL servers; {server}\n" +
+                "# will then show the raw server name uppercased.\n" +
                 "servers:\n" +
-                "  - hub\n" +
-                "  - survival\n" +
-                "  - farming\n";
+                "  hub: \"&bHUB\"\n" +
+                "  survival: \"&aSURVIVAL\"\n" +
+                "  farming: \"&eFARMING\"\n";
 
         Files.writeString(configPath, defaultConfig);
     }
@@ -121,8 +150,21 @@ public class Config {
         return format;
     }
 
+    /**
+     * Returns the set of lowercase server names included in global chat.
+     * Empty means all servers are included.
+     */
     public Set<String> getServers() {
-        return servers;
+        return serverDisplayNames.keySet();
+    }
+
+    /**
+     * Returns the configured display string for the given server name,
+     * falling back to the name uppercased if no entry exists.
+     */
+    public String getDisplayName(String serverName) {
+        return serverDisplayNames.getOrDefault(
+                serverName.toLowerCase(), serverName.toUpperCase());
     }
 
     public boolean isEnabled() {

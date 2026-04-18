@@ -62,10 +62,11 @@ public class GlobalChatListener {
             return;
         }
 
-        String prefix  = luckPerms.getPrefix(player);
-        String message = event.getMessage();
+        String prefix      = luckPerms.getPrefix(player);
+        String message     = event.getMessage();
+        String displayName = config.getDisplayName(serverName);
 
-        Component formatted = buildComponent(serverName, player.getUsername(), prefix, message);
+        Component formatted = buildComponent(displayName, player.getUsername(), prefix, message);
 
         broadcast(formatted);
 
