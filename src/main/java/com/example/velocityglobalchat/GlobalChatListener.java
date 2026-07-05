@@ -1,32 +1,21 @@
 package com.example.velocityglobalchat;
 
-import com.google.common.io.ByteStreams;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.PlayerChatEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
-import com.google.common.io.ByteArrayDataOutput;
 import java.util.regex.Pattern;
 
 /**
  * Listens for chat events on the proxy and broadcasts a formatted message
- * to all players on participating servers, cancelling the original event so
- * the message isn't echoed locally by the backend server.
+ * to all players on participating servers, denying the original event so
+ * the backend never receives the packet and cannot echo it locally.
  */
 public class GlobalChatListener {
-
-    /**
-     * Plugin-messaging channel used to tell the companion backend plugin to
-     * suppress the unsigned echo of this player's message from local chat.
-     * Both proxy and backend must agree on this name.
-     */
-    static final MinecraftChannelIdentifier SUPPRESS_CHANNEL =
-            MinecraftChannelIdentifier.from("crosschat:suppress");
 
     /**
      * Detects common MiniMessage tag patterns such as {@code <red>}, {@code </bold>},
@@ -81,33 +70,16 @@ public class GlobalChatListener {
 
         broadcast(formatted);
 
-        // Signal the companion backend plugin to suppress local display of this message.
-        // The plugin message is sent over the same TCP connection as the chat packet,
-        // so it is guaranteed to arrive at the backend before the forwarded message.
-        sendSuppressSignal(player);
-
-        // IMPORTANT: ChatResult.denied() disconnects players in Minecraft 1.19.1+ because
-        // signed chat messages cannot be cancelled at the proxy level.
-        // ChatResult.message(text) strips the cryptographic signature, making the message
-        // "unsigned", which the backend can then receive (and our companion plugin cancels).
-        event.setResult(PlayerChatEvent.ChatResult.message(event.getMessage()));
-    }
-
-    /**
-     * Sends a plugin message to the player's current backend server instructing
-     * the CrossChatBackend companion plugin to suppress the next chat event from
-     * this player (which will be the unsigned echo of the message we just broadcast).
-     *
-     * <p>If the backend does not have CrossChatBackend installed the packet is
-     * silently ignored; the message will appear in local chat as a fallback.</p>
-     */
-    private void sendSuppressSignal(Player player) {
-        player.getCurrentServer().ifPresent(conn -> {
-            ByteArrayDataOutput out = ByteStreams.newDataOutput(16);
-            out.writeLong(player.getUniqueId().getMostSignificantBits());
-            out.writeLong(player.getUniqueId().getLeastSignificantBits());
-            conn.sendPluginMessage(SUPPRESS_CHANNEL, out.toByteArray());
-        });
+        // Deny the event so Velocity does NOT forward the chat packet to the backend.
+        // This prevents the backend from echoing the message locally (which would cause
+        // players to see the message twice — once from the proxy broadcast above and once
+        // from the backend's local chat event).
+        //
+        // ChatResult.denied() is safe on Velocity 3.3+ / Minecraft 1.19.3+: the proxy
+        // simply swallows the packet without any client-visible warning or disconnect.
+        // The earlier concern about disconnects only applied to Minecraft 1.19.1–1.19.2
+        // strict-signing enforcement, which was relaxed in 1.19.3.
+        event.setResult(PlayerChatEvent.ChatResult.denied());
     }
 
     // -------------------------------------------------------------------------
@@ -172,8 +144,17 @@ public class GlobalChatListener {
     // -------------------------------------------------------------------------
 
     /**
-     * Sends the component to every player whose current server is included in
-     * the configured {@code servers} list (or to all players if the list is empty).
+     * Sends the component to every eligible player, including the sender.
+     *
+     * <p>SignedVelocity (required companion proxy plugin) handles the Minecraft
+     * 1.19+ chat-signing handshake so that {@link PlayerChatEvent.ChatResult#denied()}
+     * properly acknowledges the packet to the client. This suppresses the
+     * client-side optimistic render, meaning the sender receives exactly one
+     * message — the formatted broadcast sent here.</p>
+     *
+     * <p>Recipients are filtered so only players on servers in the configured
+     * {@code servers} list receive the message; an empty list means all
+     * servers.</p>
      */
     private void broadcast(Component component) {
         for (Player p : server.getAllPlayers()) {
