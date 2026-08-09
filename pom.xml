@@ -6,14 +6,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>velocityglobalchat</artifactId>
-    <version>1.3.2</version>
+    <artifactId>Crosschat</artifactId>
+    <version>1.3.4</version>
     <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <velocity.version>3.4.0-SNAPSHOT</velocity.version>
+        <velocity.version>3.4.0</velocity.version>
     </properties>
 
     <repositories>

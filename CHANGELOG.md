@@ -5,6 +5,24 @@ All notable changes to VelocityGlobalChat will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] — 2026-08-09
+
+### Fixed
+- PlaceholderAPI values inside LuckPerms suffixes are now resolved on Paper and forwarded to the proxy for chat, matching tablist output.
+
+### Changed
+- Updated the proxy and optional backend companion to `1.3.4`.
+- The backend companion now optionally integrates with PlaceholderAPI and LuckPerms; both remain optional.
+
+## [1.3.3] — 2026-08-08
+
+### Added
+- Added `{suffix}` and `{group}` placeholders backed by LuckPerms metadata.
+
+### Changed
+- Renamed the proxy plugin and jar to `Crosschat`, with configuration stored in `plugins/Crosschat/`.
+- Updated the proxy build target to the stable Velocity 3.4.0 API.
+
 ---
 
 ## [1.3.2] — 2026-06-26
@@ -89,7 +107,9 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Maven build with Velocity annotation-processor-generated `velocity-plugin.json`
 - Compatible with Java 17+ and Velocity 3.x
 
-[Unreleased]: https://github.com/Ethan0892/CrossChat/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/Ethan0892/CrossChat/compare/v1.3.4...HEAD
+[1.3.4]: https://github.com/Ethan0892/CrossChat/compare/v1.3.3...v1.3.4
+[1.3.3]: https://github.com/Ethan0892/CrossChat/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/Ethan0892/CrossChat/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Ethan0892/CrossChat/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Ethan0892/CrossChat/compare/v1.2.0...v1.3.0

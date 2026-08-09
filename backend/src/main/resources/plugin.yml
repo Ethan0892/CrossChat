@@ -1,5 +1,5 @@
 name: CrossChatBackend
-version: 1.3.2
+version: 1.3.4
 main: com.example.crosschatbackend.CrossChatBackend
 api-version: "1.19"
 description: >
@@ -8,3 +8,6 @@ description: >
   the proxy, and co-operates with the crosschat:suppress plugin channel.
 authors:
   - Ethan0892
+softdepend:
+  - PlaceholderAPI
+  - LuckPerms

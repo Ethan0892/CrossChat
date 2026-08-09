@@ -63,10 +63,12 @@ public class GlobalChatListener {
         }
 
         String prefix      = luckPerms.getPrefix(player);
+        String suffix      = luckPerms.getSuffix(player);
+        String group       = luckPerms.getGroup(player);
         String message     = event.getMessage();
         String displayName = config.getDisplayName(serverName);
 
-        Component formatted = buildComponent(displayName, player.getUsername(), prefix, message);
+        Component formatted = buildComponent(displayName, player.getUsername(), prefix, suffix, group, message);
 
         broadcast(formatted);
 
@@ -95,15 +97,15 @@ public class GlobalChatListener {
      * format and impersonating prefixes or formatting other players' names.</p>
      */
     private Component buildComponent(String serverName, String playerName,
-                                     String prefix, String message) {
+                                     String prefix, String suffix, String group, String message) {
         String format = config.getFormat();
 
         // Split at the {message} placeholder (max 2 parts)
         String[] parts = format.split("\\{message\\}", 2);
 
-        String prefixPart = applyPlaceholders(parts[0], serverName, playerName, prefix);
+        String prefixPart = applyPlaceholders(parts[0], serverName, playerName, prefix, suffix, group);
         String suffixPart = parts.length > 1
-                ? applyPlaceholders(parts[1], serverName, playerName, prefix)
+            ? applyPlaceholders(parts[1], serverName, playerName, prefix, suffix, group)
                 : "";
 
         Component prefixComp  = deserialize(prefixPart);
@@ -116,11 +118,14 @@ public class GlobalChatListener {
     }
 
     private static String applyPlaceholders(String text, String serverName,
-                                            String playerName, String prefix) {
+                            String playerName, String prefix,
+                            String suffix, String group) {
         return text
                 .replace("{server}",  serverName)
                 .replace("{player}",  playerName)
-                .replace("{prefix}",  prefix);
+            .replace("{prefix}",  prefix)
+            .replace("{suffix}",  suffix)
+            .replace("{group}",   group);
     }
 
     /**

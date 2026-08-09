@@ -1,6 +1,6 @@
-# VelocityGlobalChat
+# Crosschat
 
-A Velocity 3.x proxy plugin that routes chat from every backend server into a single global channel, visible to all connected players in real time.
+A Velocity 3.x proxy plugin named `Crosschat` that routes chat from every backend server into a single global channel, visible to all connected players in real time.
 
 ---
 
@@ -9,7 +9,8 @@ A Velocity 3.x proxy plugin that routes chat from every backend server into a si
 - **Cross-server chat** — messages sent on any backend server are broadcast to all players on all (configured) servers
 - **Fully customisable format** — edit `config.yml` with your own colour codes and placeholders
 - **`&` legacy codes and MiniMessage** — auto-detected; use whichever style you prefer
-- **LuckPerms integration** — optional; prefixes are pulled automatically if LuckPerms is installed on the proxy
+- **LuckPerms integration** — optional; prefixes, suffixes, and primary groups are available as placeholders
+- **PlaceholderAPI suffix support** — the optional backend companion resolves placeholders inside LuckPerms suffixes before forwarding them to the proxy
 - **Server filter** — choose which servers participate; exclude lobby-only or mini-game servers
 - **Toggle on/off** without restarting — flip `enabled: false` and restart the proxy
 
@@ -20,17 +21,19 @@ A Velocity 3.x proxy plugin that routes chat from every backend server into a si
 | Requirement | Version |
 |---|---|
 | Java | 17 or later |
-| Velocity | 3.x (tested against 3.4.0) |
+| Velocity | 3.4.0 or newer 3.x |
 | LuckPerms *(optional)* | 5.x |
+| PlaceholderAPI *(optional, backend)* | 2.11.6+ |
 
 ---
 
 ## Installation
 
-1. Download `velocityglobalchat-1.0.0.jar` from [Releases](../../releases)
+1. Download `Crosschat-1.3.3.jar` from [Releases](../../releases)
 2. Drop it into your Velocity `plugins/` folder
-3. Restart the proxy — `plugins/velocityglobalchat/config.yml` is created automatically
-4. Edit the config to taste, then restart again
+3. Restart the proxy — `plugins/Crosschat/config.yml` is created automatically
+4. To resolve backend PlaceholderAPI values in suffixes, install the updated `CrossChatBackend` companion together with PlaceholderAPI and the relevant expansion on each Paper server
+5. Edit the config to taste, then restart again
 
 ---
 
@@ -42,14 +45,14 @@ Requirements: **Java 17+**, **Maven 3.6+**
 git clone https://github.com/Ethan0892/CrossChat.git
 cd CrossChat
 mvn clean package
-# → target/velocityglobalchat-1.0.0.jar
+# → target/Crosschat-1.3.3.jar
 ```
 
 ---
 
 ## Configuration
 
-`plugins/velocityglobalchat/config.yml`
+`plugins/Crosschat/config.yml`
 
 ```yaml
 # Enable or disable the plugin entirely
@@ -59,10 +62,12 @@ enabled: true
 #   {server}  — backend server name (e.g. HUB, SURVIVAL)
 #   {player}  — sender's Minecraft username
 #   {prefix}  — LuckPerms prefix (empty if LuckPerms is absent)
+#   {suffix}  — LuckPerms suffix (empty if LuckPerms is absent)
+#   {group}   — LuckPerms primary group (empty if LuckPerms is absent)
 #   {message} — the chat message (always plain text — injection-safe)
 #
 # Use & colour codes OR MiniMessage tags — do not mix both.
-format: "&8[&b{server}&8] &7{prefix}{player}&f: {message}"
+format: "&8[&b{server}&8] &7{prefix}{player}{suffix}&f: {message}"
 
 # Servers that participate in global chat.
 # Players on servers NOT listed here neither see nor send global messages.

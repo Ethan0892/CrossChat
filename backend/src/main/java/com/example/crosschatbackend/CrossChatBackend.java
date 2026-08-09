@@ -1,12 +1,20 @@
 package com.example.crosschatbackend;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import me.clip.placeholderapi.PlaceholderAPI;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.user.User;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 
 /**
  * Companion backend plugin for VelocityGlobalChat.
@@ -52,6 +60,7 @@ public class CrossChatBackend extends JavaPlugin {
      * the Velocity proxy plugin exactly.
      */
     private static final String CHANNEL = "crosschat:suppress";
+    private static final String METADATA_CHANNEL = "crosschat:metadata";
 
     /**
      * UUIDs of players whose next incoming chat event should be suppressed.
@@ -65,12 +74,46 @@ public class CrossChatBackend extends JavaPlugin {
         // Register the incoming plugin-message channel
         getServer().getMessenger().registerIncomingPluginChannel(
                 this, CHANNEL, this::handleSuppressMessage);
+        getServer().getMessenger().registerOutgoingPluginChannel(this, METADATA_CHANNEL);
 
         // Register the AsyncChatEvent listener
         getServer().getPluginManager().registerEvents(
                 new SuppressListener(pendingSuppressions), this);
 
+        getServer().getScheduler().runTaskTimer(this, this::publishMetadata, 20L, 20L);
+
         getLogger().info("CrossChatBackend enabled — listening on channel: " + CHANNEL);
+    }
+
+    private void publishMetadata() {
+        LuckPerms luckPerms = getServer().getPluginManager().isPluginEnabled("LuckPerms")
+                ? LuckPermsProvider.get() : null;
+        boolean placeholderApiEnabled =
+                getServer().getPluginManager().isPluginEnabled("PlaceholderAPI");
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            String suffix = "";
+            if (luckPerms != null) {
+                User user = luckPerms.getUserManager().getUser(player.getUniqueId());
+                if (user != null && user.getCachedData().getMetaData().getSuffix() != null) {
+                    suffix = user.getCachedData().getMetaData().getSuffix();
+                }
+            }
+            if (placeholderApiEnabled) {
+                suffix = PlaceholderAPI.setPlaceholders(player, suffix);
+            }
+
+            try {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                DataOutputStream output = new DataOutputStream(bytes);
+                output.writeLong(player.getUniqueId().getMostSignificantBits());
+                output.writeLong(player.getUniqueId().getLeastSignificantBits());
+                output.writeUTF(suffix);
+                player.sendPluginMessage(this, METADATA_CHANNEL, bytes.toByteArray());
+            } catch (Exception e) {
+                getLogger().warning("Failed to publish metadata for " + player.getName());
+            }
+        }
     }
 
     @Override

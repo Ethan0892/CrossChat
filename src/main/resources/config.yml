@@ -1,5 +1,5 @@
 # ============================================================
-#  VelocityGlobalChat — config.yml
+#  Crosschat — config.yml
 #  This file is created automatically on first run.
 #  Modify and restart (or reload) the proxy to apply changes.
 # ============================================================
@@ -14,6 +14,8 @@ enabled: true
 #   {server}  — name of the backend server the sender is currently on
 #   {player}  — sender's Minecraft username
 #   {prefix}  — prefix from LuckPerms (empty string if not installed)
+#   {suffix}  — suffix from LuckPerms (empty string if not installed)
+#   {group}   — primary LuckPerms group (empty string if not installed)
 #   {message} — the chat message
 #               NOTE: message content is ALWAYS rendered as plain text,
 #               so players cannot inject colour codes or formatting.
@@ -23,7 +25,7 @@ enabled: true
 #   MiniMessage     →  <red>, <bold>, <#ff0000>, <gradient:red:blue>  etc.
 #
 # Default (legacy &-codes):
-format: "&8[&b{server}&8] &7{prefix}{player}&f: {message}"
+format: "&8[&b{server}&8] &7{prefix}{player}{suffix}&f: {message}"
 
 # MiniMessage example — uncomment and remove the line above to use:
 # format: "<dark_gray>[<aqua>{server}</aqua>]</dark_gray> <gray>{prefix}{player}</gray><white>: {message}</white>"

@@ -2,25 +2,33 @@ package com.example.velocityglobalchat;
 
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import org.slf4j.Logger;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Plugin(
-        id = "velocityglobalchat",
-        name = "VelocityGlobalChat",
-        version = "1.3.2",
+        id = "crosschat",
+        name = "Crosschat",
+        version = "1.3.4",
         description = "Global cross-server chat for Velocity",
         authors = {"Ethan0892"}
 )
 public class VelocityGlobalChat {
+
+    private static final MinecraftChannelIdentifier METADATA_CHANNEL =
+            MinecraftChannelIdentifier.from("crosschat:metadata");
 
     private final ProxyServer server;
     private final Logger logger;
@@ -32,7 +40,7 @@ public class VelocityGlobalChat {
     public VelocityGlobalChat(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
         this.logger = logger;
-        this.dataDirectory = dataDirectory;
+        this.dataDirectory = dataDirectory.getParent().resolve("Crosschat");
     }
 
     @Subscribe
@@ -46,15 +54,37 @@ public class VelocityGlobalChat {
             return;
         }
 
-        LuckPermsHook luckPermsHook = new LuckPermsHook(server, logger);
+            LuckPermsHook luckPermsHook = new LuckPermsHook(server, logger);
+            server.getChannelRegistrar().register(METADATA_CHANNEL);
+            server.getEventManager().register(this, new Object() {
+                @Subscribe
+                public void onMetadata(PluginMessageEvent event) {
+                    if (!METADATA_CHANNEL.equals(event.getIdentifier())) return;
+                    try {
+                        DataInputStream input = new DataInputStream(
+                                new ByteArrayInputStream(event.getData()));
+                        java.util.UUID uuid = new java.util.UUID(input.readLong(), input.readLong());
+                        String suffix = input.readUTF();
+                        server.getPlayer(uuid).ifPresent(player -> luckPermsHook.setResolvedSuffix(player, suffix));
+                        event.setResult(PluginMessageEvent.ForwardResult.handled());
+                    } catch (IOException | RuntimeException ignored) {
+                        logger.warn("Received invalid Crosschat metadata message.");
+                    }
+                }
+
+                @Subscribe
+                public void onDisconnect(DisconnectEvent event) {
+                    luckPermsHook.clearResolvedSuffix(event.getPlayer().getUniqueId());
+                }
+            });
 
         server.getEventManager().register(this, new GlobalChatListener(server, config, luckPermsHook));
 
-        logger.info("VelocityGlobalChat enabled.");
+        logger.info("Crosschat enabled.");
     }
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
-        logger.info("VelocityGlobalChat disabled.");
+        logger.info("Crosschat disabled.");
     }
 }

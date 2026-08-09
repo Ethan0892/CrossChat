@@ -111,7 +111,7 @@ public class Config {
 
     private static void writeDefaults(Path configPath) throws IOException {
         String defaultConfig =
-                "# VelocityGlobalChat configuration\n" +
+                "# Crosschat configuration\n" +
                 "\n" +
                 "# Enable or disable the plugin entirely\n" +
                 "enabled: true\n" +
@@ -120,6 +120,8 @@ public class Config {
                 "#   {server}  — name of the backend server the sender is on\n" +
                 "#   {player}  — sender's username\n" +
                 "#   {prefix}  — LuckPerms prefix (empty if LuckPerms is absent)\n" +
+                "#   {suffix}  — LuckPerms suffix (empty if LuckPerms is absent)\n" +
+                "#   {group}   — LuckPerms primary group (empty if LuckPerms is absent)\n" +
                 "#   {message} — the chat message (always rendered as plain text)\n" +
                 "#\n" +
                 "# Use & colour codes (legacy) OR MiniMessage tags (<red>, <bold>, etc.).\n" +

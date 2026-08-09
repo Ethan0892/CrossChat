@@ -8,10 +8,11 @@ import net.luckperms.api.model.user.User;
 import org.slf4j.Logger;
 
 /**
- * Optional integration with LuckPerms to resolve per-player chat prefixes.
+ * Optional integration with LuckPerms to resolve per-player chat metadata.
  *
  * <p>If LuckPerms is not installed on the proxy the hook is a no-op and
- * {@link #getPrefix(Player)} always returns an empty string.</p>
+ * {@link #getPrefix(Player)}, {@link #getSuffix(Player)}, and
+ * {@link #getGroup(Player)} always return an empty string.</p>
  */
 public class LuckPermsHook {
 
@@ -23,13 +24,13 @@ public class LuckPermsHook {
                 // LuckPermsProvider.get() is the cross-platform static accessor.
                 // It throws IllegalStateException if the API is not yet available.
                 luckPerms = LuckPermsProvider.get();
-                logger.info("LuckPerms integration enabled — prefixes will be shown.");
+                logger.info("LuckPerms integration enabled — chat metadata will be shown.");
             } catch (IllegalStateException e) {
                 logger.warn("LuckPerms detected but provider not available ({}). "
-                        + "Prefixes will be empty.", e.getMessage());
+                        + "LuckPerms placeholders will be empty.", e.getMessage());
             }
         } else {
-            logger.info("LuckPerms not found — {prefix} will be empty.");
+            logger.info("LuckPerms not found — LuckPerms placeholders will be empty.");
         }
     }
 
@@ -42,12 +43,44 @@ public class LuckPermsHook {
      * of the format string.</p>
      */
     public String getPrefix(Player player) {
+        return getMetaValue(player, "prefix");
+    }
+
+    public String getSuffix(Player player) {
+        return getMetaValue(player, "suffix");
+    }
+
+    public void setResolvedSuffix(Player player, String suffix) {
+        resolvedSuffixes.put(player.getUniqueId(), suffix != null ? suffix : "");
+    }
+
+    public void clearResolvedSuffix(java.util.UUID uuid) {
+        resolvedSuffixes.remove(uuid);
+    }
+
+    public String getGroup(Player player) {
+        if (luckPerms == null) return "";
+
+        User user = luckPerms.getUserManager().getUser(player.getUniqueId());
+        return user != null && user.getPrimaryGroup() != null ? user.getPrimaryGroup() : "";
+    }
+
+    private String getMetaValue(Player player, String type) {
         if (luckPerms == null) return "";
 
         User user = luckPerms.getUserManager().getUser(player.getUniqueId());
         if (user == null) return "";
 
-        String prefix = user.getCachedData().getMetaData().getPrefix();
-        return prefix != null ? prefix : "";
+        String value = "prefix".equals(type)
+                ? user.getCachedData().getMetaData().getPrefix()
+                : user.getCachedData().getMetaData().getSuffix();
+        if ("suffix".equals(type)) {
+            String resolved = resolvedSuffixes.get(player.getUniqueId());
+            if (resolved != null) return resolved;
+        }
+        return value != null ? value : "";
     }
+
+    private final java.util.Map<java.util.UUID, String> resolvedSuffixes =
+            new java.util.concurrent.ConcurrentHashMap<>();
 }
